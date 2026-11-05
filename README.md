@@ -81,6 +81,14 @@ shutdown_value: 0
 
 Remember to add ```SET_PIN PIN=nevermore VALUE=0``` to your print_end macro to turn the nevermore off.
 
+Both macros prime with relative extrusion, then restore your slicer's `M82`/`M83`
+selection and logical E coordinate. They leave XYZ in absolute mode and the
+nozzle at the end of the primeline; `MOVE=0` deliberately avoids a return move.
+The feed rate immediately before the prime is restored as well. Reserve the
+`PRINT_START_PRIME` saved-state name for this macro.
+
+For offline regression checks of the documented macros, see [tests](tests/README.md).
+
 
 
 # V2.4/Trident macro
@@ -190,9 +198,12 @@ gcode:
   STATUS_PRINTING                                       # Set LEDs to printing-mode
   G0 X{x_wait - 50} Y4 F10000                           # Go to starting point
   G0 Z0.4                                               # Raise Z to 0.4
-  G91                                                   # Incremental positioning 
+  SAVE_GCODE_STATE NAME=PRINT_START_PRIME                # Save extrusion mode, E position and feed rate
+  M83                                                   # Relative extrusion for the primeline
+  G91                                                   # Incremental positioning
   G1 X100 E20 F1000                                     # Primeline
   G90                                                   # Absolute position
+  RESTORE_GCODE_STATE NAME=PRINT_START_PRIME MOVE=0      # Restore state without moving back
 ```
 
 # v0 macro
@@ -249,7 +260,10 @@ gcode:
 
   # Create a prime line and starts the print
   G1 X5 Y4 Z0.4 F10000                                # Go to starting point
+  SAVE_GCODE_STATE NAME=PRINT_START_PRIME              # Save extrusion mode, E position and feed rate
+  M83                                                 # Relative extrusion for the primeline
   G1 X115 E20 F1000                                   # Primeline
+  RESTORE_GCODE_STATE NAME=PRINT_START_PRIME MOVE=0    # Restore state without moving back
 ```
 
 ## Changelog
